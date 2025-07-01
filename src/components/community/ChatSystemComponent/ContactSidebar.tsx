@@ -132,13 +132,13 @@ const handleReceiveMessage = (msg) => {
 
   updateLastMessage(senderId, msg.message, Date.now());
 
+  updateLastMessage(currentUser.id, msg.message, Date.now());
 
   setUnreadMap((prev) => ({
     ...prev,
     [senderId]: isCurrentChatOpen ? 0 : (prev[senderId] || 0) + 1
   }));
 
-  updateLastMessage(currentUser.id, msg.message, Date.now());
   setFollowedUsers((users) => [...users]);
 };
 

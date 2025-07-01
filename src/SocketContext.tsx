@@ -2,7 +2,7 @@ import React, { createContext, useContext, useRef, useEffect, useState } from "r
 import { io, Socket } from "socket.io-client";
 
 const ENV = {
-  BASE_URL: import.meta.env.VITE_URL || "http://localhost:5000",
+  BASE_URL: import.meta.env.VITE_URL || "http://192.168.1.15:3000",
 };
 
 const SocketContext = createContext<Socket | null>(null);

@@ -17,7 +17,6 @@ const StudyGroups = () => {
     try {
       const res = await axios.get(`${ENV.BASE_URL}/api/groups`);
       setGroups(res.data);
-      console.log('Fetched groups:', res.data);
     } catch (err) {
       console.error('Failed to fetch groups', err);
     } finally {
@@ -25,11 +24,6 @@ const StudyGroups = () => {
     }
   };
 
-  useEffect(() => {
-    if (user) {
-      fetchGroups();
-    }
-  }, [user]);
 
   if (!user) {
     return (

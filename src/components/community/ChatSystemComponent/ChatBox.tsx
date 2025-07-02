@@ -119,32 +119,52 @@ const ChatBox = ({ currentUser, selectedUser, selectedGroup,updateLastMessage , 
       }
     };
 
-    const handleHistory = (msgs) => {
-      setMessages(msgs);
-      if (!isGroupChat) {
-        axios.patch(`${ENV.BASE_URL}/api/messages/read`, {
-          senderId: selectedUser.id, receiverId: currentUser.id
-        }).then(loadMessages);
-      }
-    };
+    // const handleHistory = (msgs) => {
+    //   setMessages(msgs);
+    //   if (!isGroupChat) {
+    //     axios.patch(`${ENV.BASE_URL}/api/messages/read`, {
+    //       senderId: selectedUser.id, receiverId: currentUser.id
+    //     }).then(loadMessages);
+    //   }
+    // };
+
+const handleHistory = (msgs) => {
+  setMessages(msgs);
+};
+
+
+    // const handleReceiveMessage = (msg) => {
+    //   if (isGroupChat) {
+    //     if (msg.groupId === selectedGroup._id) setMessages((p) => [...p, msg]);
+    //   } else {
+    //     const isForMe = msg.receiverId === currentUser.id && msg.senderId === selectedUser.id;
+    //     const isFromMe = msg.senderId === currentUser.id && msg.receiverId === selectedUser.id;
+    //     if (isForMe) {
+    //       axios.patch(`${ENV.BASE_URL}/api/messages/read`, {
+    //         senderId: selectedUser.id, receiverId: currentUser.id
+    //       }).then(() => {
+    //         msg.read = true;
+    //         setMessages((p) => [...p, msg]);
+    //       });
+    //     } else if (isFromMe) setMessages((p) => [...p, msg]);
+    //   }
+    // };
+
 
     const handleReceiveMessage = (msg) => {
-      if (isGroupChat) {
-        if (msg.groupId === selectedGroup._id) setMessages((p) => [...p, msg]);
-      } else {
-        const isForMe = msg.receiverId === currentUser.id && msg.senderId === selectedUser.id;
-        const isFromMe = msg.senderId === currentUser.id && msg.receiverId === selectedUser.id;
-        if (isForMe) {
-          axios.patch(`${ENV.BASE_URL}/api/messages/read`, {
-            senderId: selectedUser.id, receiverId: currentUser.id
-          }).then(() => {
-            msg.read = true;
-            setMessages((p) => [...p, msg]);
-          });
-        } else if (isFromMe) setMessages((p) => [...p, msg]);
-      }
-    };
+  if (isGroupChat) {
+    if (msg.groupId === selectedGroup._id) {
+      setMessages((p) => [...p, msg]);
+    }
+  } else {
+    const isForMe = msg.receiverId === currentUser.id && msg.senderId === selectedUser.id;
+    const isFromMe = msg.senderId === currentUser.id && msg.receiverId === selectedUser.id;
 
+    if (isForMe || isFromMe) {
+      setMessages((p) => [...p, msg]);
+    }
+  }
+};
     const handleDeleteMessages = ({ ids }) => {
       setMessages((prev) => prev.filter((m) => !ids.includes(m._id)));
     };

@@ -12,8 +12,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Users, User, Shield, Cpu, Code, Wrench, Brain, Zap, Globe, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+
 export const ENV = {
-  BASE_URL: import.meta.env.VITE_URL || 'http://localhost:5000'
+  BASE_URL: import.meta.env.VITE_URL || "http://localhost:5000",
 };
 type UserRole = 'student' | 'mentor' | 'admin';
 const Signup = () => {

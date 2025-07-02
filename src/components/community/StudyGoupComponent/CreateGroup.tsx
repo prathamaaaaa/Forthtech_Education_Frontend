@@ -19,7 +19,7 @@ interface User {
 }
 
 export const ENV = {
-  BASE_URL: import.meta.env.VITE_URL || 'http://localhost:3000',
+  BASE_URL: import.meta.env.VITE_URL || 'http://localhost:5000',
 };
 
 const CreateGroup = ({ onGroupCreated }: { onGroupCreated: () => void }) => {

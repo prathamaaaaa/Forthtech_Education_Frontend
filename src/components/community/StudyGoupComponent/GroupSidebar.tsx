@@ -82,10 +82,9 @@ const GroupSidebar: React.FC<GroupSidebarProps> = ({
   >([]);
 
   // Hardcode BASE_URL for this self-contained environment
-  const ENV = {
-    BASE_URL: "http://localhost:5000" // Hardcoded
-  };
-
+ const ENV = {
+  BASE_URL: import.meta.env.VITE_URL || "http://localhost:5000",
+};
   /**
    * Fetches groups for the current user and processes join requests.
    * Leverages backend population for joinRequests.

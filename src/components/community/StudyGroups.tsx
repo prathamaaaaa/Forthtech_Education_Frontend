@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import GroupCard from './StudyGoupComponent/GoupCard';
 import CreateGroupModal from './StudyGoupComponent/CreateGroup';
+export const ENV = {
+  BASE_URL: import.meta.env.VITE_URL || "http://localhost:5000",
+};
 
 const StudyGroups = () => {
   const [groups, setGroups] = useState([]);
@@ -12,7 +15,7 @@ const StudyGroups = () => {
 
   const fetchGroups = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/groups');
+      const res = await axios.get(`${ENV.BASE_URL}/api/groups`);
       setGroups(res.data);
       console.log('Fetched groups:', res.data);
     } catch (err) {

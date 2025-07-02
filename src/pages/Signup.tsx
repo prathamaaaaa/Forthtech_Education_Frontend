@@ -16,6 +16,7 @@ import axios from 'axios';
 export const ENV = {
   BASE_URL: import.meta.env.VITE_URL || "http://localhost:5000",
 };
+
 type UserRole = 'student' | 'mentor' | 'admin';
 const Signup = () => {
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ const Signup = () => {
     // handsOnPractice: false,
     // remoteLabAccess: false,
   });
-
+console.log(ENV)
   const countries = [
     'United States', 'United Kingdom', 'Canada', 'Germany', 'France', 'Japan', 'Australia', 
     'India', 'China', 'Brazil', 'Other'

@@ -287,7 +287,7 @@ const handleAccept = async (userId: string) => {
     const acceptedUser = { ...res.data, id: res.data._id };
 
     setFollowedUsers((prev) => [...prev, acceptedUser]);
-
+  updateLastMessage(acceptedUser.id, "", Date.now());
     socket.emit("contact-accepted", {
       fromId: currentUser.id,
       toId: userId,
@@ -316,18 +316,13 @@ const handleAccept = async (userId: string) => {
 useEffect(() => {
   if (!socket) return;
   const handleSystemMessage = (msg) => {
-    if (msg?.type === "system" && (msg?.toId === currentUser.id || msg?.fromId === currentUser.id)) {
-      toast.success(msg.message); 
-      // setMessages((prev) => [...prev, msg]);
-      console.log("📩 System message receiveddddddddddddddddddddddddddddd:", msg.message);
-// setLastMessageMap((prev) => ({
-//   ...prev,
-//   [msg.fromId]: { message: msg.message, timestamp: Date.now() },
-// }));
-  updateLastMessage(currentUser.id, msg.message, Date.now());
+  if (msg?.type === "system") {
+    const otherId = msg.fromId === currentUser.id ? msg.toId : msg.fromId;
+    updateLastMessage(otherId, msg.message, Date.now());
+    toast.success(msg.message);
+  }
+};
 
-    }
-  };
 
   socket.on("system-message", handleSystemMessage);
   console.log("📩 Setting up socket for system messages with user ID:", currentUser.id);
@@ -357,6 +352,7 @@ const handleRemove = async (userId: string) => {
     return requests.filter((user) => {
       const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
       return fullName.includes(search.toLowerCase());
+      console.log(requests)
     });
   }, [requests, search]);
 
@@ -430,47 +426,87 @@ const handleUserClick = async (user: User) => {
   }
 
 
+useEffect(() => {
+  const fetchPendingRequests = async () => {
+    try {
+      const response = await axios.get(`${ENV.BASE_URL}/api/users/${currentUser.id}`);
+      const requestList = response.data.requestList || [];
+
+      console.log("Loaded requestList from DB:", requestList);
+
+      // ✅ only requests with status === "pending"
+      const pendingUserIds = requestList
+        .filter(req => req.status === "pending")
+        .map(req => req.user._id);
+
+      console.log("Pending user IDs:", pendingUserIds);
+
+      const pendingUsers = await Promise.all(
+        pendingUserIds.map(id =>
+          axios.get(`${ENV.BASE_URL}/api/users/${id}`).then(res => ({
+            ...res.data,
+            id: res.data._id
+          }))
+        )
+      );
+
+      console.log("Pending user details:", pendingUsers);
+      setRequests(pendingUsers);
+    } catch (err) {
+      console.error("❌ Error loading pending requests:", err);
+    }
+  };
+
+  fetchPendingRequests();
+}, [currentUser.id]);
 
 
 
-
-
-
-
-
-
-
-
-
-  
 useEffect(() => {
   if (!socket) return;
- const handleReceiveInvite = async ({ fromId }: { fromId: string }) => {
-  try {
-    const res = await axios.get(`${ENV.BASE_URL}/api/users/${fromId}`);
-    const senderUser = { ...res.data, id: res.data._id };
-    console.log("Received invite from:", senderUser);
-    setRequests((prev) => {
-      const alreadyExists = prev.some((u) => u.id === senderUser.id);
-      return alreadyExists ? prev : [...prev, senderUser];
+console.log('okjkhbgcfdxfcgvbhjnm')
+  const handleReceiveInvite = async ({ fromId }) => {
+    try {
+      // Same logic as first useEffect
+      const response = await axios.get(`${ENV.BASE_URL}/api/users/${fromId}`);
+      const requestObjs = response.data.requestList || [];
 
-    });
+      console.log("📥 Received new requests list from invite:", requestObjs);
 
-    toast.success(`New invite from ${senderUser.firstName}`);
-  } catch (err) {
-    console.error("Failed to fetch sender user info:", err);
-  }
-};
+      const pendingRequestUserIds = requestObjs
+        .filter((req) => req.status === 'pending')
+        .map((req) => req.user._id);
 
+      console.log("Pending user IDs from invite:", pendingRequestUserIds);
+
+      const requestUserPromises = pendingRequestUserIds.map((id) =>
+        axios.get(`${ENV.BASE_URL}/api/users/${id}`).then((res) => ({
+          ...res.data,
+          id: res.data._id,
+        }))
+      );
+
+      const requestUsers = await Promise.all(requestUserPromises);
+
+      // Merge with existing requests, avoid duplicates
+      setRequests((prev) => {
+        const existingIds = new Set(prev.map((u) => u.id));
+        const newUniqueUsers = requestUsers.filter((u) => !existingIds.has(u.id));
+        return [...prev, ...newUniqueUsers];
+      });
+
+      toast.success(`New requests loaded from ${response.data.firstName}`);
+    } catch (err) {
+      console.error("❌ Failed to fetch new requests on invite:", err);
+    }
+  };
 
   socket.on("receive-invite", handleReceiveInvite);
 
   return () => {
     socket.off("receive-invite", handleReceiveInvite);
   };
-}, [currentUser?.id,socket]);
-
-
+}, [currentUser?.id, socket]);
 
 
 
@@ -506,7 +542,7 @@ useEffect(() => {
 
 
 
-{isRequest ? (
+{/* {isRequest ? (
 
   <div className="flex gap-1">
     <Button
@@ -537,9 +573,9 @@ useEffect(() => {
   <div className="ml-2 bg-gray-500 text-white text-xs px-2 py-0.5 rounded-full">
     {unreadMap[user.id]}
   </div>
-) : null}
+) : null} 
 
-
+ */}
 
 </div>
 
@@ -575,14 +611,62 @@ useEffect(() => {
     <div className="text-center text-muted-foreground mt-6">Loading contacts...</div>
   ) : (
           <div className="space-y-2">
-            {filteredRequests.length > 0 && (
+            {/* {filteredRequests.length > 0 && (
               <>
                 <div className="text-sm font-semibold text-muted-foreground px-2 pt-2">
                   Requests
                 </div>
                 {filteredRequests.map((user) => renderUser(user, true))}
               </>
-            )}
+            )} */}
+
+
+{requests.length > 0 && (
+  <>
+    <div className="text-sm font-semibold text-muted-foreground mb-2">
+      Pending Requests
+    </div>
+    {requests.map((user) => (
+      <div
+        key={user.id}
+        className="flex justify-between items-center mb-2 bg-yellow-50 dark:bg-yellow-900 px-3 py-2 rounded"
+      >
+        <div>
+          {user.firstName} {user.lastName}
+          <div className="text-xs text-muted-foreground">{user.email}</div>
+        </div>
+        <div className="flex gap-1">
+          <Button
+            size="sm"
+            className="text-xs px-2 py-1 flex items-center justify-center"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAccept(user.id);
+            }}
+          >
+            <span className="hidden md:inline">Accept</span>
+            <Check className="md:hidden h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            className="text-xs px-2 py-1 flex items-center justify-center"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRemove(user.id);
+            }}
+          >
+            <span className="hidden md:inline">Remove</span>
+            <X className="md:hidden h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    ))}
+    <div className="my-3 border-b border-gray-300 dark:border-gray-700"></div>
+  </>
+)}
+
+
 
 
 
@@ -615,11 +699,13 @@ useEffect(() => {
       </Card>
 
       {showInviteModal && (
-        <InviteUsersPopup
-          currentUser={currentUser}
-          onClose={() => setShowInviteModal(false)}
-          socket={socket}
-        />
+     <InviteUsersPopup
+  currentUser={currentUser}
+  onClose={() => setShowInviteModal(false)}
+  socket={socket}
+  requests={requests}
+/>
+
       )}
     </div>
   );

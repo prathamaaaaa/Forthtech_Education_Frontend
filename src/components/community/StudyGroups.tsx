@@ -5,7 +5,10 @@ import CreateGroupModal from './StudyGoupComponent/CreateGroup';
 
 const StudyGroups = () => {
   const [groups, setGroups] = useState([]);
-  const [loading, setLoading] = useState(true); // Optional: for showing loader
+  const [loading, setLoading] = useState(true);
+
+  const storedUser = localStorage.getItem("user");
+  const user = storedUser ? JSON.parse(storedUser).user : null;
 
   const fetchGroups = async () => {
     try {
@@ -20,8 +23,27 @@ const StudyGroups = () => {
   };
 
   useEffect(() => {
-    fetchGroups();
-  }, []);
+    if (user) {
+      fetchGroups();
+    }
+  }, [user]);
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[80vh] text-center text-gray-700 dark:text-gray-300 px-4">
+        <h1 className="text-3xl font-semibold mb-2">Login Required</h1>
+        <p className="text-sm max-w-md mb-4">
+          You must be logged in to view and join study groups.
+        </p>
+        <a
+          href="/login"
+          className="bg-forthtech-red hover:bg-red-600 text-white font-medium py-2 px-4 rounded transition-all"
+        >
+          Go to Login
+        </a>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -43,11 +65,10 @@ const StudyGroups = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-       {groups.map((group) => {
-  console.log("Group:", group._id);
-  return <GroupCard key={group._id} group={group} />;
-})}
-
+          {groups.map((group) => {
+            console.log("Group:", group._id);
+            return <GroupCard key={group._id} group={group} />;
+          })}
         </div>
       )}
     </div>
@@ -55,7 +76,6 @@ const StudyGroups = () => {
 };
 
 export default StudyGroups;
-
 
 
 

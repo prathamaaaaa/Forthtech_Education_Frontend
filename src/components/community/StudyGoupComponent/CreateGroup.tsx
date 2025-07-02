@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Users } from 'lucide-react';
-import { useSocket } from "@/SocketContext"; 
+// import { useSocket } from "@/SocketContext"; 
 interface User {
   id: string;
   firstName: string;
@@ -31,8 +31,7 @@ const CreateGroup = ({ onGroupCreated }: { onGroupCreated: () => void }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [selectAll, setSelectAll] = useState(false);
 const [isPrivate, setIsPrivate] = useState(false);
-const socket = useSocket();
-console.log(socket,"sohgfdxfcgvhbjnkmlmjnhbgfdfgvhbjnkmjnbhgfcdcgvhbjnm,")
+// const socket = useSocket();
   const currentUserRaw = localStorage.getItem('user');  
 
 

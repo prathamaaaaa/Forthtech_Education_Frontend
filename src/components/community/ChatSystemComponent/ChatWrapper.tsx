@@ -22,6 +22,7 @@ const InviteUsersPopup = ({
 }) => {
   const [users, setUsers] = useState<any[]>([]);
   const [invitedUserIds, setInvitedUserIds] = useState<string[]>([]);
+const [invitingIds, setInvitingIds] = useState<string[]>([]);
 
   // ✅ Initialize socket only once
   // useEffect(() => {
@@ -121,6 +122,10 @@ const handleInvite = async (userId: string) => {
     console.error("❌ Invalid userId to invite:", userId);
     return;
   }
+   if (invitingIds.includes(userId)) return; // prevent double click
+
+  setInvitingIds((prev) => [...prev, userId]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
   try {
     console.log("Inviting user:", userId, "from:", currentUser.id);
     await axios.patch(`${ENV.BASE_URL}/api/users/${currentUser.id}/request`, {
@@ -145,6 +150,8 @@ const handleInvite = async (userId: string) => {
     } else {
       toast.error("Failed to invite user. Try again.");
     }
+  } finally {
+    setInvitingIds((prev) => prev.filter((id) => id !== userId));
   }
 };
 
@@ -153,25 +160,6 @@ return (
     <div className="bg-white dark:bg-gray-900 rounded-lg p-6 w-[400px] max-h-[80vh] overflow-y-auto">
       <h2 className="text-lg font-semibold mb-4">Invite Users</h2>
 
-      {requests.length > 0 && (
-        <>
-          <div className="text-sm font-semibold text-muted-foreground mb-2">
-            Pending Requests
-          </div>
-          {requests.map((u) => (
-            <div
-              key={u.id}
-              className="flex justify-between items-center mb-2 bg-yellow-50 dark:bg-yellow-900 px-3 py-2 rounded"
-            >
-              <span>
-                {u.firstName} {u.lastName}
-              </span>
-              <span className="text-xs text-muted-foreground">Requested</span>
-            </div>
-          ))}
-          <div className="my-3 border-b border-gray-300 dark:border-gray-700"></div>
-        </>
-      )}
 
       {users.length === 0 ? (
         <p className="text-sm text-muted-foreground">
@@ -186,13 +174,15 @@ return (
             <span>
               {u.firstName} {u.lastName}
             </span>
-            <Button
-              variant="default"
-              onClick={() => handleInvite(u.id)}
-              size="sm"
-            >
-              Invite
-            </Button>
+           <Button
+  variant="default"
+  onClick={() => handleInvite(u.id)}
+  size="sm"
+  disabled={invitingIds.includes(u.id)}
+>
+  {invitingIds.includes(u.id) ? "Sending..." : "Invite"}
+</Button>
+
           </div>
         ))
       )}

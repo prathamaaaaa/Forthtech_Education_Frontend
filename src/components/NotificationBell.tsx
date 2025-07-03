@@ -51,16 +51,16 @@ const NotificationBell: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (!userId) return;
+useEffect(() => {
+  if (!userId) return;
+  fetchNotifications();
+console.log("jfjrnf")
+  const interval = setInterval(() => {
     fetchNotifications();
+  }, 5000); 
 
-    const interval = setInterval(() => {
-      fetchNotifications();
-    }, 300000); // 5 minutes
-
-    return () => clearInterval(interval);
-  }, [userId]);
+  return () => clearInterval(interval);
+}, [userId]);
 
   const handleDelete = async (id: string) => {
     try {

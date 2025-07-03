@@ -86,6 +86,45 @@ useEffect(() => {
   };
 
 
+const refreshContactsAndRequests = async () => {
+  try {
+    setLoading(true);
+
+    // Fetch latest contacts
+    const resContacts = await axios.get(`${ENV.BASE_URL}/api/users/${currentUser.id}/contacts-with-last-message`);
+    const contacts = resContacts.data;
+
+    contacts.forEach(contact => {
+      if (contact.lastMessage) {
+        updateLastMessage(contact.id, contact.lastMessage.message, contact.lastMessage.timestamp);
+      }
+    });
+    setFollowedUsers(contacts);
+
+    // Fetch pending requests
+    const resUser = await axios.get(`${ENV.BASE_URL}/api/users/${currentUser.id}`);
+    const requestList = resUser.data.requestList || [];
+
+    const pendingUserIds = requestList
+      .filter(req => req.status === "pending")
+      .map(req => req.user._id);
+
+    const pendingUsers = await Promise.all(
+      pendingUserIds.map(id =>
+        axios.get(`${ENV.BASE_URL}/api/users/${id}`).then(res => ({
+          ...res.data,
+          id: res.data._id
+        }))
+      )
+    );
+    setRequests(pendingUsers);
+
+  } catch (err) {
+    console.error("❌ Failed to refresh contacts and requests:", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
 
 
@@ -95,52 +134,52 @@ useEffect(() => {
 useEffect(() => {
   if (!socket) return;
 
-  // const handleReceiveMessage = (msg) => {
-  //   const { senderId } = msg;
+  const handleReceiveMessage = (msg) => {
+    const { senderId } = msg;
 
-  //   const isCurrentChatOpen = selectedUser?.id === senderId;
+    const isCurrentChatOpen = selectedUser?.id === senderId;
 
-  //   if (!isCurrentChatOpen) {
-  //     setUnreadMap((prev) => ({
-  //       ...prev,
-  //       [senderId]: (prev[senderId] || 0) + 1,
-  //     }));
-  //   } else {
-  //     setUnreadMap((prev) => ({
-  //       ...prev,
-  //       [senderId]: 0,
-  //     }));
-  //   }
+    if (!isCurrentChatOpen) {
+      setUnreadMap((prev) => ({
+        ...prev,
+        [senderId]: (prev[senderId] || 0) + 1,
+      }));
+    } else {
+      setUnreadMap((prev) => ({
+        ...prev,
+        [senderId]: 0,
+      }));
+    }
 
-  //   setLastMessageMap((prev) => ({
-  //     ...prev,
-  //     [senderId]: {
-  //       message: msg.message,
-  //       timestamp: new Date(msg.timestamp).getTime(),
-  //     },
-  //   }));
+    // setLastMessageMap((prev) => ({
+    //   ...prev,
+    //   [senderId]: {
+    //     message: msg.message,
+    //     timestamp: new Date(msg.timestamp).getTime(),
+    //   },
+    // }));
 
-  //   console.log("📥 Message received from:", senderId, msg.message);
-  // };
-
-
+    console.log("📥 Message received from:", senderId, msg.message);
+  };
 
 
-const handleReceiveMessage = (msg) => {
-  const { senderId } = msg;
-  const isCurrentChatOpen = selectedUserRef.current?.id === senderId;
 
-  updateLastMessage(senderId, msg.message, Date.now());
 
-  updateLastMessage(currentUser.id, msg.message, Date.now());
+// const handleReceiveMessage = (msg) => {
+//   const { senderId } = msg;
+//   const isCurrentChatOpen = selectedUserRef.current?.id === senderId;
 
-  setUnreadMap((prev) => ({
-    ...prev,
-    [senderId]: isCurrentChatOpen ? 0 : (prev[senderId] || 0) + 1
-  }));
+//   updateLastMessage(senderId, msg.message, Date.now());
 
-  setFollowedUsers((users) => [...users]);
-};
+//   updateLastMessage(currentUser.id, msg.message, Date.now());
+
+//   setUnreadMap((prev) => ({
+//     ...prev,
+//     [senderId]: isCurrentChatOpen ? 0 : (prev[senderId] || 0) + 1
+//   }));
+
+//   setFollowedUsers((users) => [...users]);
+// };
 
 
 
@@ -299,7 +338,9 @@ const handleAccept = async (userId: string) => {
       },
     });
 
+
     toast.success(`${acceptedUser.firstName} is now in your contacts`);
+        await refreshContactsAndRequests();
   } catch (error) {
     console.error("Error accepting request:", error);
   }
@@ -309,6 +350,24 @@ const handleAccept = async (userId: string) => {
 
 
 
+useEffect(() => {
+  if (!socket) return;
+
+  const handleContactAccepted = async ({ fromId, toId, user }) => {
+    console.log("🤝 Contact accepted event:", { fromId, toId, user });
+
+    // If this is about the current user, refresh their sidebar
+    if (currentUser.id === toId || currentUser.id === fromId) {
+      await refreshContactsAndRequests();
+    }
+  };
+
+  socket.on("contact-accepted", handleContactAccepted);
+
+  return () => {
+    socket.off("contact-accepted", handleContactAccepted);
+  };
+}, [socket, currentUser.id]);
 
 
 
@@ -462,49 +521,65 @@ useEffect(() => {
 
 useEffect(() => {
   if (!socket) return;
-console.log('okjkhbgcfdxfcgvbhjnm')
+
+  console.log("🟢 Socket listener set for receive-invite");
+
   const handleReceiveInvite = async ({ fromId }) => {
     try {
-      // Same logic as first useEffect
-      const response = await axios.get(`${ENV.BASE_URL}/api/users/${fromId}`);
-      const requestObjs = response.data.requestList || [];
+      console.log("📬 New invite received from:", fromId);
 
-      console.log("📥 Received new requests list from invite:", requestObjs);
+      const response = await axios.get(`${ENV.BASE_URL}/api/users/${currentUser.id}`);
+      const requestList = response.data.requestList || [];
+      console.log("bacwefjrgnkjgkjsfnjrkfnk")
+      const pendingUserIds = requestList
+        .filter(req => req.status === "pending")
+        .map(req => req.user._id);
 
-      const pendingRequestUserIds = requestObjs
-        .filter((req) => req.status === 'pending')
-        .map((req) => req.user._id);
+      console.log("🔎 Pending user IDs from DB:", pendingUserIds);
 
-      console.log("Pending user IDs from invite:", pendingRequestUserIds);
-
-      const requestUserPromises = pendingRequestUserIds.map((id) =>
-        axios.get(`${ENV.BASE_URL}/api/users/${id}`).then((res) => ({
-          ...res.data,
-          id: res.data._id,
-        }))
+      // Fetch details for each pending user
+      const pendingUsers = await Promise.all(
+        pendingUserIds.map(id =>
+          axios.get(`${ENV.BASE_URL}/api/users/${id}`)
+            .then(res => ({
+              id: res.data._id,
+              firstName: res.data.firstName || "Unknown",
+              lastName: res.data.lastName || "",
+              email: res.data.email || "No Email",
+            }))
+            .catch(err => {
+              console.error(`❌ Failed to load user ${id}`, err);
+              return null;
+            })
+        )
       );
 
-      const requestUsers = await Promise.all(requestUserPromises);
+      const validPendingUsers = pendingUsers.filter(u => u !== null);
+      console.log("✅ Fetched valid pending users:", validPendingUsers);
 
-      // Merge with existing requests, avoid duplicates
-      setRequests((prev) => {
-        const existingIds = new Set(prev.map((u) => u.id));
-        const newUniqueUsers = requestUsers.filter((u) => !existingIds.has(u.id));
-        return [...prev, ...newUniqueUsers];
+      // Merge without duplicates
+      setRequests(prev => {
+        const existingIds = new Set(prev.map(u => u.id));
+        const newUnique = validPendingUsers.filter(u => !existingIds.has(u.id));
+        const merged = [...prev, ...newUnique];
+        console.log("💾 Updated requests list:", merged);
+        return merged;
       });
 
-      toast.success(`New requests loaded from ${response.data.firstName}`);
+      toast.success("🎉 You received a new contact request!");
+
     } catch (err) {
-      console.error("❌ Failed to fetch new requests on invite:", err);
+      console.error("❌ Failed to process new invite:", err);
     }
   };
 
   socket.on("receive-invite", handleReceiveInvite);
 
   return () => {
+    console.log("🔴 Cleaning up receive-invite listener");
     socket.off("receive-invite", handleReceiveInvite);
   };
-}, [currentUser?.id, socket]);
+}, [socket, currentUser?.id]);
 
 
 

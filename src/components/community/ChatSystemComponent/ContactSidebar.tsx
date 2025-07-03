@@ -392,13 +392,11 @@ const handleUserClick = async (user: User) => {
   setSelectedUser(user);
 
   try {
-    // ✅ Tell your backend to mark these messages as read
     await axios.patch(`${ENV.BASE_URL}/api/messages/read`, {
       senderId: user.id,
       receiverId: currentUser.id
     });
 
-    // ✅ Locally clear unread bubble
     setUnreadMap((prev) => ({
       ...prev,
       [user.id]: 0

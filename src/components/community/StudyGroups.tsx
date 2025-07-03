@@ -16,6 +16,7 @@ const StudyGroups = () => {
   const fetchGroups = async () => {
     try {
       const res = await axios.get(`${ENV.BASE_URL}/api/groups`);
+      console.log(res)
       setGroups(res.data);
     } catch (err) {
       console.error('Failed to fetch groups', err);

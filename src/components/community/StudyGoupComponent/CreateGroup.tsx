@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Users } from 'lucide-react';
-// import { useSocket } from "@/SocketContext"; 
+import { useSocket } from "@/SocketContext"; 
 interface User {
   id: string;
   firstName: string;
@@ -44,14 +44,15 @@ if (!currentUser?.id) {
 
   useEffect(() => {
     if (!currentUser?.id) return;
+    console.log(currentUser.id)
 axios
   .get(`${ENV.BASE_URL}/api/users/${currentUser.id}`)
   .then((res) => {
     const followIds = res.data.followList || [];
-
+    console.log("followPromises",followIds)
     // Fetch details for each followed user
-    const followPromises = followIds.map((id: string) =>
-      axios.get(`${ENV.BASE_URL}/api/users/${id}`).then(userRes => ({
+    const followPromises = followIds.map((element) =>
+      axios.get(`${ENV.BASE_URL}/api/users/${element._id}`).then(userRes => ({
         ...userRes.data,
         id: userRes.data._id
       }))
